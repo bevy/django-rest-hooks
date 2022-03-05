@@ -5,6 +5,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from rest_hooks.utils import get_hook_model
 
+
 def _do_hook(target, payload, instance=None, hook_id=None, **kwargs):
     """
     target:     the url to receive the payload.
@@ -32,20 +33,16 @@ try:
     class DeliverHook(Task):
         def run(self, target, payload, instance=None, hook_id=None, **kwargs):
             _do_hook(target, payload, instance=None, hook_id=None, **kwargs)
+
+    def deliver_hook_wrapper(target, payload, instance=None, hook=None, **kwargs):
+        if hook:
+            kwargs['hook_id'] = hook.id
+        return DeliverHook.delay(target, payload, **kwargs)
 except ImportError:
     from celery import shared_task
 
     @shared_task
-    class DeliverHook:
-        def __init__():
-            pass
-
-        def __call__(self, target, payload, instance=None, hook_id=None, **kwargs):
-            _do_hook(target, payload, instance=None, hook_id=None, **kwargs)
-
-
-
-def deliver_hook_wrapper(target, payload, instance=None, hook=None, **kwargs):
-    if hook:
-        kwargs['hook_id'] = hook.id
-    return DeliverHook.delay(target, payload, **kwargs)
+    def deliver_hook_wrapper(target, payload, instance=None, hook=None, **kwargs):
+        if hook:
+            kwargs['hook_id'] = hook.id
+        return _do_hook(target, payload, instance=None, hook_id=None, **kwargs)
